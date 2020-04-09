@@ -1,0 +1,4 @@
+rsa==4.0
+requests==2.23.0
+QtAwesome==0.7.0
+PyQt5==5.14.2
