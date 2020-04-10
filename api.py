@@ -505,22 +505,32 @@ class BD:
             if response and response.get("code") == 0:
                 if response["data"]:
                     for i in response["data"]:
-                        self.reply['title'].append(i['title'])
-                        self.reply['url'].append(f"https://www.bilibili.com/video/{i['bvid']}")
-                        self.reply['id'].append(i['id'])
-                        self.reply['floor'].append(i['floor'])
-                        self.reply['replier'].append(i['replier'])
-                        self.reply['message'].append(i['message'])
-                        self.reply['ctime'].append(i['ctime'])
-                        self.reply['face'].append(i['cover'])
-                        self.reply['parent'].append(i['parent'])
-                        if i['parent'] == 0:
-                            self.reply['parent_name'].append("")
-                            self.reply['parent_message'].append("")
-                        else:
-                            self.reply['parent_name'].append(i['root_info']['member']['uname'])
-                            self.reply['parent_message'].append(i['root_info']['content']['message'])
-                        self.reply['like'].append(i['like'])
+                        try:
+                            self.reply['title'].append(i['title'])
+                            self.reply['url'].append(f"https://www.bilibili.com/video/{i['bvid']}")
+                            self.reply['id'].append(i['id'])
+                            self.reply['floor'].append(i['floor'])
+                            self.reply['replier'].append(i['replier'])
+                            self.reply['message'].append(i['message'])
+                            self.reply['ctime'].append(i['ctime'])
+                            self.reply['face'].append(i['cover'])
+                            self.reply['parent'].append(i['parent'])
+                            if i.get("parent_info"):
+                                self.reply['parent'].append(1)
+                                parent = 1
+                            else:
+                                self.reply['parent'].append(0)
+                                parent = 0
+                            if parent == 0:
+                                self.reply['parent_name'].append("")
+                                self.reply['parent_message'].append("")
+                            else:
+                                self.reply['parent_name'].append(i['root_info']['member']['uname'])
+                                self.reply['parent_message'].append(i['root_info']['content']['message'])
+                            self.reply['like'].append(i['like'])
+                        except Exception as e:
+                            print(f"api.get_reply: {e, i}")
+                            pass
                 return True
             else:
                 return False

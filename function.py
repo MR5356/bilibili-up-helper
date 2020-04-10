@@ -302,8 +302,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         # print(f"notify: {msm}")
         if msm.get("error", 0) == 1:
             reply = QtWidgets.QMessageBox.question(self,
-                                                   '登录状态失效',
-                                                   "请重新登录",
+                                                   '系统通知线程已经停止',
+                                                   "系统通知模块停止了工作(不影响主程序)，是否重启软件尝试恢复",
                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                                                    QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -311,9 +311,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 self.destroy()
                 qApp.exit(101)
             else:
-                self.tray.hide()
-                self.destroy()
-                qApp.exit(101)
+                pass
         else:
             notify = "通知：你有"
             tray_notify = "哔哩哔哩UP主助手\n"
@@ -367,8 +365,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         # print(f"video: {msm}")
         if msm.get("error", 0) == 1:
             reply = QtWidgets.QMessageBox.question(self,
-                                                   '登录状态失效',
-                                                   "请重新登录",
+                                                   '视频稿件线程出错',
+                                                   "视频稿件模块停止了工作(不影响主程序)，是否重启软件尝试恢复",
                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                                                    QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -376,9 +374,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 self.destroy()
                 qApp.exit(101)
             else:
-                self.tray.hide()
-                self.destroy()
-                qApp.exit(101)
+                pass
         else:
             a = time.time()
             try:
@@ -413,8 +409,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
     def Article_UI(self, msm):
         if msm.get("error", 0) == 1:
             reply = QtWidgets.QMessageBox.question(self,
-                                                   '登录状态失效',
-                                                   "请重新登录",
+                                                   '专栏文章线程出错',
+                                                   "已经停止使用了专栏文章模块(不影响主程序)，是否重启软件尝试恢复",
                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                                                    QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -422,11 +418,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 self.destroy()
                 qApp.exit(101)
             else:
-                self.tray.hide()
-                self.destroy()
-                qApp.exit(101)
+                pass
         else:
-            a = time.time()
             try:
                 self.listWidget_article.clear()
             except Exception as e:
@@ -459,8 +452,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
     def Reply_UI(self, msm):
         if msm.get("error", 0) == 1:
             reply = QtWidgets.QMessageBox.question(self,
-                                                   '登录状态失效',
-                                                   "请重新登录",
+                                                   '评论线程出错',
+                                                   "已经停止使用评论功能(不影响主程序)，是否重启软件尝试恢复",
                                                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                                                    QtWidgets.QMessageBox.No)
             if reply == QtWidgets.QMessageBox.Yes:
@@ -468,11 +461,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 self.destroy()
                 qApp.exit(101)
             else:
-                self.tray.hide()
-                self.destroy()
-                qApp.exit(101)
+                pass
         else:
-            a = time.time()
             try:
                 self.listWidget_reply.clear()
             except Exception as e:
@@ -502,42 +492,27 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
             QMessageBox.information(self, '小助手提示', '程序运行异常，请确定网络连接是否正常，然后尝试重启客户端，如问题还未解决，请点击反馈按钮留言')
 
     def Update_UI(self, msm):
-        if msm.get("error", 0) == 1:
-            reply = QtWidgets.QMessageBox.question(self,
-                                                   '登录状态失效',
-                                                   "请重新登录",
-                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                   QtWidgets.QMessageBox.No)
-            if reply == QtWidgets.QMessageBox.Yes:
-                self.tray.hide()
-                self.destroy()
-                qApp.exit(101)
+        if msm.get("net", 1) == 0:
+            if msm["Version"] == False:
+                QMessageBox.information(self, '小助手提示', '连接更新服务器失败')
             else:
-                self.tray.hide()
-                self.destroy()
-                qApp.exit(101)
+                pass
         else:
-            if msm.get("net", 1) == 0:
-                if msm["Version"] == False:
-                    QMessageBox.information(self, '小助手提示', '连接更新服务器失败')
+            if msm['Version'] == self.version:
+                if msm["auto"] == False:
+                    QMessageBox.information(self, '小助手提示', '已经是最新版本')
                 else:
                     pass
             else:
-                if msm['Version'] == self.version:
-                    if msm["auto"] == False:
-                        QMessageBox.information(self, '小助手提示', '已经是最新版本')
-                    else:
-                        pass
+                reply = QtWidgets.QMessageBox.question(self,
+                                                       '发现新版本，是否立即更新',
+                                                       f'发现新版本：V{msm["Version"]}，更新内容如下：\n\n{msm["Update_des"]}\n\n是否立即更新?',
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.Yes:
+                    self.open_browser(msm["Update_url"])
                 else:
-                    reply = QtWidgets.QMessageBox.question(self,
-                                                           '发现新版本，是否立即更新',
-                                                           f'发现新版本：V{msm["Version"]}，更新内容如下：\n\n{msm["Update_des"]}\n\n是否立即更新?',
-                                                           QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                           QtWidgets.QMessageBox.No)
-                    if reply == QtWidgets.QMessageBox.Yes:
-                        self.open_browser(msm["Update_url"])
-                    else:
-                        pass
+                    pass
 
     # 视频稿件部分
     def get_item_wight(self, msms):
