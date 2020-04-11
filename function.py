@@ -33,7 +33,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         super(fun_main, self).__init__()
 
         # 版本控制
-        self.version = 1.0
+        self.version = 1.1
 
         # self.load_data()
         self.setupUi(self)
@@ -697,7 +697,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         layout_right_down.addWidget(pushButton_like)
 
         layout_right_middle = QVBoxLayout()  # 右下的横向布局
-        if parent != 0:
+        if parent == 1:
             font = QtGui.QFont()
             font.setFamily("微软雅黑")
             font.setPointSize(9)

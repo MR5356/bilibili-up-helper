@@ -86,11 +86,11 @@ class BD:
         }
         self.reply = {
             "title": [],
+            'url': [],
             "bvid": [],
-            "url": [],
-            "face": [],
             "id": [],
             "floor": [],
+            "face": [],
             "replier": [],
             "message": [],
             "ctime": [],
@@ -514,7 +514,7 @@ class BD:
                             self.reply['message'].append(i['message'])
                             self.reply['ctime'].append(i['ctime'])
                             self.reply['face'].append(i['cover'])
-                            self.reply['parent'].append(i['parent'])
+                            # self.reply['parent'].append(i['parent'])
                             if i.get("parent_info"):
                                 self.reply['parent'].append(1)
                                 parent = 1
