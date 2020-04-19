@@ -99,6 +99,14 @@ class BD:
             "parent_message": [],
             "like": [],
         }
+        self.danmaku = {
+            "title": [],
+            'url': [],
+            "bvid": [],
+            "id": [],
+            "message": [],
+            "ctime": [],
+        }
 
     def _requests(self, method, url, decode_level=2, retry=10, timeout=15, **kwargs):
         if method in ["get", "post"]:
@@ -499,6 +507,8 @@ class BD:
                                   headers=headers)
         if response and response.get("code") == 0:
             count = response["pager"]["total"]
+            if count > 100:
+                count = 100  # 只显示最新的100条评论
             response = self._requests("get",
                                       f"https://member.bilibili.com/x/web/replies?order=ctime&filter=-1&is_hidden=0&type=1&bvid=&pn=1&ps={count}",
                                       headers=headers)
@@ -528,6 +538,46 @@ class BD:
                                 self.reply['parent_name'].append(i['root_info']['member']['uname'])
                                 self.reply['parent_message'].append(i['root_info']['content']['message'])
                             self.reply['like'].append(i['like'])
+                        except Exception as e:
+                            print(f"api.get_reply: {e, i}")
+                            pass
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def get_danmaku(self):
+        self.danmaku = {
+            "title": [],
+            'url': [],
+            "id": [],
+            "message": [],
+            "ctime": [],
+        }
+        headers = {
+            'Host': "api.bilibili.com",
+            'Referer': f"https://space.bilibili.com/{self.get_uid()}/",
+        }
+        response = self._requests("get",
+                                  f"https://api.bilibili.com/x/v2/dm/recent?pn=1&ps=1",
+                                  headers=headers)
+        if response and response.get("code") == 0:
+            count = response["data"]["page"]["total"]
+            if count > 500:
+                count = 500  # 只显示最新的100条评论
+            response = self._requests("get",
+                                      f"https://api.bilibili.com/x/v2/dm/recent?pn=1&ps={count}",
+                                      headers=headers)
+            if response and response.get("code") == 0:
+                if response["data"]["result"]:
+                    for i in response["data"]["result"]:
+                        try:
+                            self.danmaku['title'].append(i['title'])
+                            self.danmaku['url'].append(f"https://www.bilibili.com/video/{i['bvid']}")
+                            self.danmaku['id'].append(i['id'])
+                            self.danmaku['message'].append(i['msg'])
+                            self.danmaku['ctime'].append(i['ctime'])
                         except Exception as e:
                             print(f"api.get_reply: {e, i}")
                             pass

@@ -55,11 +55,13 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         self.video_url = {}
         self.article_url = {}
         self.reply_url = {}
+        self.danmaku_url = {}
         self.main_thread()
         self.notify_thread()
         self.video_thread()
         self.article_thread()
         self.reply_thread()
+        self.danmaku_thread()
         self.update_thread()
 
     def Setting(self):
@@ -107,9 +109,11 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         self.listWidget.itemClicked.connect(self.vitem_clicked)
         self.listWidget_article.itemClicked.connect(self.aitem_clicked)
         self.listWidget_reply.itemClicked.connect(self.ritem_clicked)
+        self.listWidget_danmaku.itemClicked.connect(self.ditem_clicked)
         self.pushButton_vrenew.clicked.connect(self.video_thread)
         self.pushButton_arenew.clicked.connect(self.article_thread)
         self.pushButton_rrenew.clicked.connect(self.reply_thread)
+        self.pushButton_drenew.clicked.connect(self.danmaku_thread)
         self.pushButton_setting.clicked.connect(self.Setting)
         self.pushButton_max.clicked.connect(self.window_max)
 
@@ -126,6 +130,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         self.pushButton_vrenew.setIcon(qtawesome.icon('fa.refresh', color='blank'))
         self.pushButton_arenew.setIcon(qtawesome.icon('fa.refresh', color='blank'))
         self.pushButton_rrenew.setIcon(qtawesome.icon('fa.refresh', color="blank"))
+        self.pushButton_drenew.setIcon(qtawesome.icon('fa.refresh', color="blank"))
         self.pushButton_setting.setIcon(qtawesome.icon('fa.cog', color='white'))
         self.pushButton_max.setIcon(qtawesome.icon('fa.window-maximize', color='white'))
 
@@ -470,7 +475,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 pass
             if msm["reply_url"]:
                 self.reply_url = msm["reply_url"]
-                self.label_rtot.setText(f"共有 {len(self.reply_url)} 条评论")
+                self.label_rtot.setText(f"共有 {len(self.reply_url)} 条评论（如果评论数大于100，则只显示最新的100条记录）")
+                # self.label_rtot.setText(f"共有 {len(self.reply_url)} 条弹幕（如果评论数大于100，则只显示最新的100条记录）") if len(self.reply_url) > 500 else self.label_rtot.setText(f"共有 {len(self.reply_url)} 条评论")
                 for i in msm["widgets"]:
                     item = QListWidgetItem()  # 创建QListWidgetItem对象
                     QApplication.processEvents()
@@ -482,6 +488,50 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
             else:
                 self.label_rtot.setText(f"暂时没有评论")
             self.pushButton_rrenew.setText("")
+
+    def danmaku_thread(self):
+        try:
+            self.pushButton_drenew.setText(f"获取中...")
+            self.danmaku_Thread = Danmaku_Thread(self.cookies)
+            self.danmaku_Thread.display_signal.connect(self.Danmaku_UI)
+            self.danmaku_Thread.start()
+        except:
+            QMessageBox.information(self, '小助手提示', '程序运行异常，请确定网络连接是否正常，然后尝试重启客户端，如问题还未解决，请点击反馈按钮留言')
+
+    def Danmaku_UI(self, msm):
+        if msm.get("error", 0) == 1:
+            reply = QtWidgets.QMessageBox.question(self,
+                                                   '评论线程出错',
+                                                   "已经停止使用评论功能(不影响主程序)，是否重启软件尝试恢复",
+                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                   QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.tray.hide()
+                self.destroy()
+                qApp.exit(101)
+            else:
+                pass
+        else:
+            try:
+                self.listWidget_danmaku.clear()
+            except Exception as e:
+                print(e)
+                pass
+            if msm["danmaku_url"]:
+                self.danmaku_url = msm["danmaku_url"]
+                self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条评论（如果弹幕数大于500，则只显示最新的500条记录）")
+                # self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条弹幕（如果弹幕数大于500，则只显示最新的500条记录）") if len(self.danmaku_url) > 500 else self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条弹幕")
+                for i in msm["widgets"]:
+                    item = QListWidgetItem()  # 创建QListWidgetItem对象
+                    QApplication.processEvents()
+                    widget = self.get_item_wight_danmaku(i)  # 调用上面的函数获取对应
+                    item.setSizeHint(QSize(widget.width(), widget.height()))  # 设置QListWidgetItem大小与widget相同
+                    QApplication.processEvents()
+                    self.listWidget_danmaku.addItem(item)  # 添加item
+                    self.listWidget_danmaku.setItemWidget(item, widget)
+            else:
+                self.label_dtot.setText(f"暂时没有评论")
+            self.pushButton_drenew.setText("")
 
     def update_thread(self, auto=True):
         try:
@@ -749,6 +799,49 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         wight.setLayout(layout_main)  # 布局给wight
         return wight  # 返回wight
 
+    def get_item_wight_danmaku(self, msms):
+        title = msms["title"]
+        id = msms['id']
+        message = msms['message']
+        ctime = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(msms["ctime"])))
+
+        wight = QWidget()
+        wight.setObjectName("widget_main")
+        wight.setStyleSheet(
+            "QWidget#widget_main{background:Transparent;border:0px solid grey;}QWidget#widget_main:hover{background-color:rgba(240,245,255,0.8);}")
+        wight.setMinimumSize(QtCore.QSize(0, 10))
+        wight.setMaximumSize(QtCore.QSize(16777215, 100))
+        layout_main = QHBoxLayout()
+        layout_main.setContentsMargins(11, 0, 11, 0)
+        layout_main.setSpacing(6)
+        layout_right = QVBoxLayout()
+        layout_right_up = QHBoxLayout()  # 右下的横向布局
+        font = QtGui.QFont()
+        font.setFamily("微软雅黑")
+        font.setPointSize(7)
+        label_title = QtWidgets.QLabel()
+        font = QtGui.QFont()
+        font.setFamily("微软雅黑")
+        font.setPointSize(10)
+        font.setBold(True)
+        font.setWeight(50)
+        label_title.setFont(font)
+        label_title.setText(f"{ctime}：{message}")
+        layout_right_middle = QVBoxLayout()  # 右下的横向布局
+        font = QtGui.QFont()
+        font.setFamily("微软雅黑")
+        font.setPointSize(9)
+        label_reply = QLabel(f"来自于：{title}")
+        label_reply.setFont(font)
+        label_reply.setStyleSheet("QLabel{color:Gray}")
+        layout_right_middle.addWidget(label_reply)
+        layout_right_up.addWidget(label_title)
+        layout_right.addLayout(layout_right_up)  # 右边的纵向布局
+        layout_right.addLayout(layout_right_middle)  # 右下角横向布局
+        layout_main.addLayout(layout_right)  # 右边的布局
+        wight.setLayout(layout_main)  # 布局给wight
+        return wight  # 返回wight
+
     def vitem_clicked(self, item):
         self.open_browser(self.video_url[self.listWidget.currentIndex().row()])
 
@@ -757,6 +850,9 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
 
     def ritem_clicked(self, item):
         self.open_browser(self.reply_url[self.listWidget_reply.currentIndex().row()])
+
+    def ditem_clicked(self, item):
+        self.open_browser(self.danmaku_url[self.listWidget_danmaku.currentIndex().row()])
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -941,6 +1037,39 @@ class Reply_Thread(QThread):
                                     msms[j] = msm[j][i]
                             widgets.append(msms)
                         self.display_signal.emit({"error": 0, "reply_url": reply_url, "widgets": widgets})
+                        break
+            else:
+                self.display_signal.emit({"error": 1})
+        except Exception as e:
+            print(e)
+            self.display_signal.emit({"error": 1})
+
+
+class Danmaku_Thread(QThread):
+    display_signal = pyqtSignal(dict)
+
+    def __init__(self, cookies):
+        super().__init__()
+        self.cookies = cookies
+
+    def run(self):
+        app = api.BD()
+        login_info = {}
+        try:
+            if app.login(**self.cookies):
+                for _ in range(5):
+                    if app.get_danmaku():
+                        msm = app.danmaku
+                        # print(msm)
+                        var = ["title", "id", "message", "ctime"]
+                        reply_url = msm["url"]
+                        widgets = []
+                        for i in range(len(reply_url)):
+                            msms = {}
+                            for j in var:
+                                msms[j] = msm[j][i]
+                            widgets.append(msms)
+                        self.display_signal.emit({"error": 0, "danmaku_url": reply_url, "widgets": widgets})
                         break
             else:
                 self.display_signal.emit({"error": 1})
