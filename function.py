@@ -802,6 +802,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
     def get_item_wight_danmaku(self, msms):
         title = msms["title"]
         id = msms['id']
+        uname = msms['uname']
         message = msms['message']
         ctime = str(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(msms["ctime"])))
 
@@ -826,12 +827,12 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         font.setBold(True)
         font.setWeight(50)
         label_title.setFont(font)
-        label_title.setText(f"{ctime}：{message}")
+        label_title.setText(f"{uname}：{message}")
         layout_right_middle = QVBoxLayout()  # 右下的横向布局
         font = QtGui.QFont()
         font.setFamily("微软雅黑")
         font.setPointSize(9)
-        label_reply = QLabel(f"来自于：{title}")
+        label_reply = QLabel(f"{ctime} 来自于：{title}")
         label_reply.setFont(font)
         label_reply.setStyleSheet("QLabel{color:Gray}")
         layout_right_middle.addWidget(label_reply)
@@ -1061,7 +1062,7 @@ class Danmaku_Thread(QThread):
                     if app.get_danmaku():
                         msm = app.danmaku
                         # print(msm)
-                        var = ["title", "id", "message", "ctime"]
+                        var = ["title", "id", "message", "ctime", "uname"]
                         reply_url = msm["url"]
                         widgets = []
                         for i in range(len(reply_url)):

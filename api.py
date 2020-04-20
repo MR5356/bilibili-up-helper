@@ -102,7 +102,7 @@ class BD:
         self.danmaku = {
             "title": [],
             'url': [],
-            "bvid": [],
+            "uname": [],
             "id": [],
             "message": [],
             "ctime": [],
@@ -552,6 +552,7 @@ class BD:
             "title": [],
             'url': [],
             "id": [],
+            "uname": [],
             "message": [],
             "ctime": [],
         }
@@ -576,6 +577,7 @@ class BD:
                             self.danmaku['title'].append(i['title'])
                             self.danmaku['url'].append(f"https://www.bilibili.com/video/{i['bvid']}")
                             self.danmaku['id'].append(i['id'])
+                            self.danmaku['uname'].append(i['uname'])
                             self.danmaku['message'].append(i['msg'])
                             self.danmaku['ctime'].append(i['ctime'])
                         except Exception as e:
