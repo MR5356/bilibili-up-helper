@@ -11,7 +11,9 @@ import qtawesome
 import api
 import json
 import os
+import soft_cfg
 import resources_rc
+
 
 def pic_cache(url):
     if not os.path.exists("cache"):
@@ -28,12 +30,14 @@ def pic_cache(url):
             qApp.quit()
     return f"cache/{url.split('/')[-1]}"
 
+
 class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
     def __init__(self, cookies):
         super(fun_main, self).__init__()
 
         # 版本控制
-        self.version = 1.1
+        self.version = soft_cfg.version
+        self.soft_name = soft_cfg.soft_name
 
         # self.load_data()
         self.setupUi(self)
@@ -104,7 +108,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
     def signal_on_button(self):
         self.pushButton_close.clicked.connect(self.win_close)
         self.pushButton_min.clicked.connect(self.showMinimized)
-        self.pushButton_feedback.clicked.connect(lambda: self.open_browser("https://www.toodo.fun"))
+        self.pushButton_feedback.clicked.connect(lambda: self.open_browser(soft_cfg.feedback_url))
         self.pushButton_notify.clicked.connect(self.notify_clicked)
         self.listWidget.itemClicked.connect(self.vitem_clicked)
         self.listWidget_article.itemClicked.connect(self.aitem_clicked)
@@ -156,7 +160,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         self.RestoreAction.triggered.connect(self.show)
         self.QuitAction.triggered.connect(self.close)
         self.LogoutAction.triggered.connect(self.logout)
-        self.FeedbackAction.triggered.connect(lambda: self.open_browser("https://www.toodo.fun"))
+        self.FeedbackAction.triggered.connect(lambda: self.open_browser(soft_cfg.feedback_url))
         self.UpdateAction.triggered.connect(lambda: self.update_thread(auto=False))
         self.tray_coin.setIcon(qtawesome.icon('fa.btc', color="blank"))
         self.tray_balance.setIcon(qtawesome.icon('fa.flash', color='blank'))
@@ -264,7 +268,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
             except Exception as e:
                 print(f"face_Main: {e}")
                 img = QImage.fromData(
-                         requests.get(msm["face"]).content)
+                    requests.get(msm["face"]).content)
                 self.label_face.setPixmap(QPixmap.fromImage(img))
             self.label_face.setScaledContents(True)
             self.label_level.setText(f"等级 {msm['level']}")
@@ -519,7 +523,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 pass
             if msm["danmaku_url"]:
                 self.danmaku_url = msm["danmaku_url"]
-                self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条评论（如果弹幕数大于500，则只显示最新的500条记录）")
+                self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条弹幕（如果弹幕数大于500，则只显示最新的500条记录）")
                 # self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条弹幕（如果弹幕数大于500，则只显示最新的500条记录）") if len(self.danmaku_url) > 500 else self.label_dtot.setText(f"共有 {len(self.danmaku_url)} 条弹幕")
                 for i in msm["widgets"]:
                     item = QListWidgetItem()  # 创建QListWidgetItem对象
@@ -543,7 +547,7 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
 
     def Update_UI(self, msm):
         if msm.get("net", 1) == 0:
-            if msm["Version"] == False:
+            if msm["Version"] == False or msm.get("Version", None) is None:
                 QMessageBox.information(self, '小助手提示', '连接更新服务器失败')
             else:
                 pass
@@ -554,15 +558,23 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
                 else:
                     pass
             else:
-                reply = QtWidgets.QMessageBox.question(self,
-                                                       '发现新版本，是否立即更新',
-                                                       f'发现新版本：V{msm["Version"]}，更新内容如下：\n\n{msm["Update_des"]}\n\n是否立即更新?',
-                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                       QtWidgets.QMessageBox.No)
-                if reply == QtWidgets.QMessageBox.Yes:
-                    self.open_browser(msm["Update_url"])
+                if msm.get("hot_update", 0) == 0:
+                    reply = QtWidgets.QMessageBox.question(self,
+                                                           '发现新版本，是否立即更新',
+                                                           f'发现新版本：V{msm["Version"]}，更新内容如下：\n\n{msm["Update_des"]}\n\n是否立即更新?',
+                                                           QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                           QtWidgets.QMessageBox.No)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        self.open_browser(msm["Update_url"])
+                    else:
+                        pass
                 else:
-                    pass
+                    if msm.get("finish", False):
+                        QMessageBox.information(self, '软件升级完成',
+                                                f'新版本：V{msm["Version"]}，更新内容如下：\n\n{msm["Update_des"]}\n\n已经为您更新完成，下次重启软件后生效')
+                    else:
+                        QMessageBox.information(self, '软件升级失败', f'新版本：V{msm["Version"]}，更新内容如下：\n\n{msm["Update_des"]}\n\n请尝试重启软件或留言反馈')
+
 
     # 视频稿件部分
     def get_item_wight(self, msms):
@@ -582,7 +594,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
         wight = QWidget()
 
         wight.setObjectName("widget_main")
-        wight.setStyleSheet("QWidget#widget_main{background:Transparent;border:0px solid grey;}QWidget#widget_main:hover{background-color:rgba(240,245,255,0.8);}")
+        wight.setStyleSheet(
+            "QWidget#widget_main{background:Transparent;border:0px solid grey;}QWidget#widget_main:hover{background-color:rgba(240,245,255,0.8);}")
         wight.setMinimumSize(QtCore.QSize(0, 100))
         wight.setMaximumSize(QtCore.QSize(16777215, 100))
         layout_main = QHBoxLayout()
@@ -716,7 +729,8 @@ class fun_main(Ui_MainWindow, QtWidgets.QMainWindow):
 
         wight = QWidget()
         wight.setObjectName("widget_main")
-        wight.setStyleSheet("QWidget#widget_main{background:Transparent;border:0px solid grey;}QWidget#widget_main:hover{background-color:rgba(240,245,255,0.8);}")
+        wight.setStyleSheet(
+            "QWidget#widget_main{background:Transparent;border:0px solid grey;}QWidget#widget_main:hover{background-color:rgba(240,245,255,0.8);}")
         layout_main = QHBoxLayout()
         layout_main.setContentsMargins(11, 0, 11, 0)
         layout_main.setSpacing(6)
@@ -1026,7 +1040,8 @@ class Reply_Thread(QThread):
                     if app.get_reply():
                         msm = app.reply
                         # print(msm)
-                        var = ["title", "id", "floor", "face", "replier", "message", "ctime", "parent", "parent_name", "parent_message", "like"]
+                        var = ["title", "id", "floor", "face", "replier", "message", "ctime", "parent", "parent_name",
+                               "parent_message", "like"]
                         reply_url = msm["url"]
                         widgets = []
                         for i in range(len(reply_url)):
@@ -1088,17 +1103,24 @@ class Update_Thread(QThread):
 
     def run(self):
         try:
-            result = json.loads(requests.get('https://www.toodo.fun/funs/bilibili/version.php', timeout=3).text)
+            # raise FileExistsError
+            result = json.loads(requests.get(soft_cfg.update_url, timeout=3).text)
         except:
-            result = {
-                "net": 0,
-                "Version": 1.1,
-                "Update_des": "1、更新了一\n2、更新了2222\n3、更新了333",
-                "Update_url": "https://www.toodo.fun"
-            }
+            result = soft_cfg.result_test
         if self.auto:
             result["auto"] = True
         else:
             result["auto"] = False
-        self.display_signal.emit(result)
+        if result.get("hot_update", 0) == 1:
+            try:
+                patch = requests.get(result.get("Update_url")).content
+                with open(f"{soft_cfg.soft_name}", "wb") as f:
+                    f.write(patch)
+                result["finish"] = True
+            except Exception as e:
+                print(f"update: {e}")
+                with open("error.txt", "w") as f:
+                    f.write(f"update: {e}")
+                result["finish"] = False
 
+        self.display_signal.emit(result)
